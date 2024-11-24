@@ -1,10 +1,11 @@
 # KiPaD
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb)
 
 ## Overview
 KiPaD is a python script that allows you to determine the observed rate constants and spectroscopic properties of intermediate species, from data obtained from multiwavelength time-resolved absorption spectroscopy using stopped-flow.
 
 ## Usage
-This software is created in Google Colab. To access it, click on the Google Colab badge above or on this [link]().
+This software is created in Google Colab. To access it, click on the Google Colab badge above or on this [link](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb).
 
 **Step 1**: Check the format of the data, it must be a csv file and have the following structure:
 
