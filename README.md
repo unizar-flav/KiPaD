@@ -7,7 +7,7 @@ KiPaD is a python script that allows you to determine the observed rate constant
 ## Usage
 This software is created in Google Colab. To access it, click on the Google Colab badge above or on this [link](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb).
 
-**Step 1**: Check the format of the data, it must be a csv file and have the following structure:
+**Step 1**: Verify the format of the data. It must be a CSV file and with the following structure:
 
 
 | SPECTRA   |  |  |  |  |  |
@@ -19,35 +19,39 @@ This software is created in Google Colab. To access it, click on the Google Cola
 | $t_4$ | 0.0002    | 0.0002     | 0.0027     | 0.0032     | ...   |
 | ...    | ...   | ...    | ...   | ...   | ...   |
 
-where $\lambda_n$ and $t_m$ are the wavelength and the times in increasing order, respectively.
+Here:
+* **$\lambda_n$**: Wavelength values, in nm , listed in increasing order.
+* **$t_m$**: Time points, also listed in increasing order.
 
 **Step 2**: Load the modules and functions *(Modules and functions)*. This step only needs to be perform once regardless of the number of datasets processed.
 
-**Step 3**: Run the next cell *(Upload files)*. It is prepared to handle more than one file, but they must have different $\t_m$. For example:
+**Step 3**: Run the next cell *(Upload files)*. It supports multiple files provided they have distinct time-points $\t_m$. For example:
 1. A file with time-points that ranges from 0.01 to 0.1 s in increments of 0.01 s.
 2. A file with time-points that ranges from 1 to 100 s in increments of 1s.
 3. A file with a single time-point at 0.00s.
-The program *lee_espectro()* will combine all three files into a single DataFrame and order the data acording to the time-points in increasing order.
+The function *lee_espectro()* will merge the files into a single DataFrame sorting the data by time-points in ascending order.
 
-**Step 4**: The following cell *(Spectra plot)* will plot two 2D plots: Absorbance vs Wavelength and Absorbance vs Time. The plots will be displays in tabs with their respective names and the plot themsleves are interactive as they allow to zoom in or out through box zoom and wheel zoom. It also has the option to download the plot as a png file.
+**Step 4**: The following cell *(Spectra plot)* will plot two 2D plots: Absorbance vs Wavelength and Absorbance vs Time. The plots will be displayed in tabs with their respective titles, and they are interactive, allowing zooming via box zoom or wheel zoom. Users can also download the plots as PNG files
 
-**Step 5**: In this cell *(Singular Value Determination (SVD) and Determination of the Significant Singular Values (SSV))* we perform SVD and the determination of SSV through three different methods:
-1. *Scree-plot method*: This method is based in drawing the singular values in a Cartesian coordinate system and then the number of singular values is chosen as the "elbow" of the graph. The particular application in this code includes a numerical definition of the "elbow", as the SSV at which the points no longer properly fit a line with a regression coefficient equal or bigger to a set threshold (default: *scree_plot_th=0.9*). Those singular values are thus considered as the most important to explain the data and, therefore, named Significant Singular Values (SSVs).
-2.  *Entropy method*: This approach evaluates the uncertainty in the data that the singular values can explain. A threshold is set to determine the desired level of explain uncertainty. For instance, if you aim to capture 90% of the data's uncertainty, you set *entropy_threshold* to 0.9. The method then identifies the smallest number of singular values *(n)* need to exceed this threshold, ensuring the specified level of uncertainty is explained.
-3. *Broken-stick method*: It determines the number of SSVs by comparing them to a random distribution. It generates a "broken stick" distribution and identifies how many singular values of the data exceed the values of this distribution. The number of of singular values greater than the broken stick values indicates the significant components in the data.
 
-After running the cell each method will print the number of SSV they determined. Be mindful that the number of SSV can be considered as the number of relevant *absorbers* (species with spectroscopic properties) and thus the number of possible species in the reaction in study.
+**Step 5**: In this cell *(Singular Value Determination (SVD) and Identification of the Significant Singular Values (SSV))* performs SVD and the identifies SSV using three methods:
+1. *Scree-plot method*: Plots the singular values on a Cartesian plane and identifies the "elbow" point as the number of SSV. This implementation uses a numerical definition of the elbow, selecting the SSV at which the singular values up to the point they no longer fit a line with a regression coeffiecient greater of equal to a threshold (default:*scree_plot_th* to 0.9).
+2.*Entropy Method*: Evaluates the data's uncertainty explain by singular valies. By selectinf a threshold (from 0 to 1, default: *entropy_threshold* to 0.9), the method identifies the smallest number of singular values needed to exceed this level, ensuring the specified uncertainty is explained.
+3. *Borken-Stick Method*: compares the singular values to a random "broken stick" distribution. SSVs are identified as those exceeding the corresponding values from this distribution, indicating significant components in the data.
 
-**Step 6**: In the next cell *(Dimensionality reduction and Matrix Approximation)*, it will ask you to input the number of SSVs (take into account the results from the previous step) and then it will perform an approximation of original data using only those singular values, which are responsible of the main variations of the data and thus elminitaing noise from the data.
+Each method prints the number of SSVs determined. These values can be interepreted as the number of significant "absorbers" (species with spectroscopic properties), providing insight into the potential number of reaction species under study.
 
-**Step 7**: Repeat of step 4 but with the *denoised* data. Here it can be appreciated the lines are much smoother.
 
-**Step 8**: The next cell *(Reaction Model Parameters)*, allows you to input the relevant parameters for the reaction model proposed:
-- Number of species (related to number of SSV)
-- Pathlength of the cuvette
-- Initial concentration of the species
-- Estimated kinetic rates (for those to be optimzed the *k_fixed* box must be unchecked)
-This script currently is only able to handle this reaction model or simpler versions of it:
+**Step 6**:In the next cell *(Dimensionality reduction and Matrix Approximation)*, you will be prompted to input the number of SSVs, based on the results from Step 5. The script will then approximate the original data using only the significant singular values, which represent the primary variations in the dataset, effectively reducing noise. and then it will perform an approximation of original data using only the significant singular values, which capture the primary variations in the data, effectively reducing noise.
+
+**Step 7**: This step repeats Step 4 but uses the *denoised* data. The resulting plots demonstrate the denoised data, with smoother lines reflecting reduced noise.
+
+**Step 8**: The next cell *(Reaction Model Parameters)*, allows you to input the relevant parameters for the proposed reaction model :
+- **Number of species**: Corresponding to the number of SSVs.
+- **Pathlength of the cuvette**: The pathlength used in the experiment.
+- **Initial concentration of the species**: Initial concentrations for each species in the model.
+- **Estimated kinetic rates**: Provide estimates for kinetic rates. For parameters to be optimized during fitting, uncheck the *k_fixed* box.
+This script currently is only able to handle this reaction model (or simpler versions of it):
 ```mermaid
 graph TD;
     A-->B;
@@ -58,17 +62,20 @@ graph TD;
     D-->C;
 ```
 
-**Step 9**: The following cell *(Procesa)* will call the procesa function which will be in charge on the optimization of the reaction model proposed. There is a dropdown which allows to choose the method by which the spectroscopic species are estimated. If you have a rough estimation of the kinetic parameters the *Pseudo-inverse* method is the best choice, if you do not have any information you may use the *Explicit* method.
+**Step 9**: This cell *(Procesa)* runs the *procesa()* function which performs the optimization of the proposed reaction model proposed. A dropdown menu allows you to select the method for estimating spectroscopic species:
+* **Pseudo-inverse Method**: Recommended if you have a rough estimation of the kinetic parameters.
+* **Explicit Method**: Use this if no prior information about kinetic parameters is available. Then use the optimized 
 
 **Step 10**: This cell *(Model's plots)* will plot the modeled data:
-- Absorbance vs Wavelength
-- Absorbance vs Time
-- Concentratration Profile
-- Spectroscopic Species
-- Absorbance vs Wavelength Residuals Plot (uses the original data to calculate the residuals)
-- Absorbance vs Wavelength Residuals Denoised Plot (uses the denoised data to calculate the residuals)
-- Absorbance vs Time Residuals Plot (uses the original data to calculate the residuals)
-- Absorbance vs Time Residuals Denoised Plot (uses the denoised data to calculate the residuals)
+- **Absorbance vs Wavelength**
+- **Absorbance vs Time**
+- **Concentratration Profile**
+- **Spectroscopic Species**
+- **Residual Plots:**
+    - **Absorbance vs Wavelength (Original Data)**: Residuals calculated using original data.
+    - **Absorbance vs Wavelength (Denoised Data)**: Residuals calculated using denoised data.
+    - **Absorbance vs Time (Original Data)**: Residuals calculated using original data.
+    - **Absorbance vs Time (Denoised Data)**: Residuals calculated using denoised data.
 
 **Step 11**: The final cell *(Export results)* will gather all the generated data and save it as a set of CSV files within a ZIP archive. List of data:
 1. Original experimental data
