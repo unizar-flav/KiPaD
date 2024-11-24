@@ -10,12 +10,12 @@ argLeastSquares = dict(ftol=1e-13, xtol=1e-13, gtol=1e-13,
                        verbose=True, kwargs={})
 
 # Algoritmo Runge-Kutta 4º orden
-def deriv_RK (fDeriv,x,t,deltaT,**paramDeriv):
+def deriv_RK (fDeriv,x,t,deltaT,paramDeriv):
 
-    k1 = fDeriv ( x, t, **paramDeriv)
-    k2 = fDeriv ( x+k1*deltaT/2, t+ deltaT/2, **paramDeriv)
-    k3 = fDeriv ( x+k2*deltaT/2, t+ deltaT/2, **paramDeriv)
-    k4 = fDeriv ( x+k3*deltaT, t+ deltaT, **paramDeriv)
+    k1 = fDeriv ( x, t, paramDeriv)
+    k2 = fDeriv ( x+k1*deltaT/2, t+ deltaT/2, paramDeriv)
+    k3 = fDeriv ( x+k2*deltaT/2, t+ deltaT/2, paramDeriv)
+    k4 = fDeriv ( x+k3*deltaT, t+ deltaT, paramDeriv)
 
     return (k1+2*k2+2*k3+k4)/6
 
