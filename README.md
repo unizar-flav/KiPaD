@@ -42,8 +42,8 @@ After running the cell each method will print the number of SSV they determined.
 **Step 7**: Repeat of step 4 but with the *denoised* data. Here it can be appreciated the lines are much smoother.
 
 **Step 8**: The next cell *(Reaction Model Parameters)*, allows you to input the relevant parameters for the reaction model proposed:
-- number of species (related to SSV)
-- pathlength of the cuvette
+- Number of species (related to number of SSV)
+- Pathlength of the cuvette
 - Initial concentration of the species
 - Estimated kinetic rates (for those to be optimzed the *k_fixed* box must be unchecked)
 This script currently is only able to handle this reaction model or simpler versions of it:
