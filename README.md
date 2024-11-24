@@ -59,7 +59,7 @@ graph TD;
 
 **Step 9**: The following cell *(Procesa)* will call the procesa function which will be in charge on the optimization of the reaction model proposed. There is a dropdown which allows to choose the method by which the spectroscopic species are estimated. If you have a rough estimation of the kinetic parameters the *Pseudo-inverse* method is the best choice, if you do not have any information you may use the *Explicit* method.
 
-**Step 10**: This cell *(Spectra plot Model)* will plot the modeled data:
+**Step 10**: This cell *(Model's plots)* will plot the modeled data:
 - Absorbance vs Wavelength
 - Absorbance vs Time
 - Concentratration Profile
