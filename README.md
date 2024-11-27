@@ -2,7 +2,7 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb)
 
 ## Overview
-KiPaD is a python script that allows you to determine the observed rate constants and spectroscopic properties of intermediate species, from data obtained from multiwavelength time-resolved absorption spectroscopy using stopped-flow.
+KiPaD is a python script aimed to calculate the observed rate constants and spectroscopic properties of intermediate species, from data obtained from multiwavelength time-resolved absorption spectroscopy by using stopped-flow.
 
 ## Usage
 This software is created in Google Colab. To access it, click on the Google Colab badge above or on this [link](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb).
@@ -34,19 +34,19 @@ The function *lee_espectro()* will merge the files into a single DataFrame sorti
 **Step 4**: The following cell *(Spectra plot)* will plot two 2D plots: Absorbance vs Wavelength and Absorbance vs Time. The plots will be displayed in tabs with their respective titles, and they are interactive, allowing zooming via box zoom or wheel zoom. Users can also download the plots as PNG files
 
 
-**Step 5**: In this cell *(Singular Value Determination (SVD) and Identification of the Significant Singular Values (SSV))* performs SVD and the identifies SSV using three methods:
+**Step 5**: This cell *(Singular Value Determination (SVD) and Identification of the Significant Singular Values (SSV))* performs SVD and identifies SSV using three methods:
 1. **Scree-plot method**: Plots the singular values on a Cartesian plane and identifies the "elbow" point as the number of SSV. This implementation uses a numerical definition of the elbow, selecting the SSV at which the singular values up to the point they no longer fit a line with a regression coeffiecient greater of equal to a threshold (default:*scree_plot_th* to 0.9).
-2. **Entropy Method**: Evaluates the data's uncertainty explain by singular valies. By selectinf a threshold (from 0 to 1, default: *entropy_threshold* to 0.9), the method identifies the smallest number of singular values needed to exceed this level, ensuring the specified uncertainty is explained.
-3. **Broken-Stick Method**: compares the singular values to a random "broken stick" distribution. SSVs are identified as those exceeding the corresponding values from this distribution, indicating significant components in the data.
+2. **Entropy Method**: Evaluates the data's uncertainty explained by singular values. By selecting a threshold (from 0 to 1, default: *entropy_threshold* to 0.9), the method identifies the smallest number of singular values needed to exceed this level, ensuring the specified uncertainty is explained.
+3. **Broken-Stick Method**: Compares the singular values to a random "broken stick" distribution. SSVs are identified as those exceeding the corresponding values from this distribution, indicating significant components in the data.
 
 Each method prints the number of SSVs determined. These values can be interepreted as the number of significant "absorbers" (species with spectroscopic properties), providing insight into the potential number of reaction species under study.
 
 
-**Step 6**:In the next cell *(Dimensionality reduction and Matrix Approximation)*, you will be prompted to input the number of SSVs, based on the results from Step 5. The script will then approximate the original data using only the significant singular values, which represent the primary variations in the dataset, effectively reducing noise. and then it will perform an approximation of original data using only the significant singular values, which capture the primary variations in the data, effectively reducing noise.
+**Step 6**:In the next cell *(Dimensionality reduction and Matrix Approximation)*, the user is prompted to input the number of SSVs( based on the results from Step 5). The script will then approximate the original data using only the significant singular values, which capture the primary variations in the data, effectively reducing noise.
 
 **Step 7**: This step repeats Step 4 but uses the *denoised* data. The resulting plots demonstrate the denoised data, with smoother lines reflecting reduced noise.
 
-**Step 8**: The next cell *(Reaction Model Parameters)*, allows you to input the relevant parameters for the proposed reaction model :
+**Step 8**: The next cell *(Reaction Model Parameters)*, allows the user to input the relevant parameters for the proposed reaction model :
 - **Number of species**: Corresponding to the number of SSVs.
 - **Pathlength of the cuvette**: The pathlength used in the experiment.
 - **Initial concentration of the species**: Initial concentrations for each species in the model.
@@ -62,9 +62,9 @@ graph TD;
     D-->C;
 ```
 
-**Step 9**: This cell *(Procesa)* runs the *procesa()* function which performs the optimization of the proposed reaction model proposed. A dropdown menu allows you to select the method for estimating spectroscopic species:
+**Step 9**: This cell *(Procesa)* runs the *procesa()* function which performs the optimization of the proposed reaction model. A dropdown menu allows to select the method for estimating spectroscopic species:
 * **Pseudo-inverse Method**: Recommended if you have a rough estimation of the kinetic parameters.
-* **Explicit Method**: Use this if no prior information about kinetic parameters is available. Then use the optimized 
+* **Explicit Method**: Use this if no prior information about kinetic parameters is available. Then feed the optimized kinetic rates to the cell *Reaction Model Parameters* and run **Step 8** again, next in **Step 9** choose the **Pseudo-inverse Method** to obtain the final fitting.  
 
 **Step 10**: This cell *(Model's plots)* will plot the modeled data:
 - **Absorbance vs Wavelength**
@@ -85,4 +85,4 @@ graph TD;
 5. Residuals (Original - Model data)
 6. Concentration profile
 7. Spectroscopic species
-8. Initial parameters along with the fitting result from procesa
+8. Initial parameters along with the fitting result from procesa (optimized kinetic rates, their standard deviation, and details from the fitting process)
