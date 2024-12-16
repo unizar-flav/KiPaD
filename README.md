@@ -44,7 +44,7 @@ The function *lee_espectro()* will merge the files into a single DataFrame sorti
 Each method prints the number of SSVs they determined. These values can be interepreted as a model-free estimation of the number of significant "absorbers" (species with spectroscopic properties), providing insight into the potential number of reaction species under study.
 
 
-**Step 7**:In the next cell *(Dimensionality reduction and Matrix Approximation)*, the user is prompted to input the number of SSVs( based on the results from Step 5). The script will then approximate the original data using only the significant singular values, which capture the primary variations in the data, effectively reducing noise. If the user does NOT want matrix approximation to happen, uncheck the *Answer* box.
+**Step 7**:In the next cell *(Dimensionality reduction and Matrix Approximation)*, the user is prompted to input the number of SSVs (based on the results from Step 5). The script will then approximate the original data using only the significant singular values, which capture the primary variations in the data, effectively reducing noise. If the user does NOT want matrix approximation to happen, uncheck the *Answer* box.
 
 **Step 8**: This step repeats Step 5 but uses the *denoised* data. The resulting plots demonstrate the denoised data, with smoother lines reflecting reduced noise.
 
