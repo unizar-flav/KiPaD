@@ -67,7 +67,7 @@ graph TD;
 ```
 
 **Step 10**: This cell *(Procesa)* runs the *procesa()* function which performs the optimization of the proposed reaction model. A dropdown menu allows to select the method for estimating spectroscopic species:
-* **Pseudo-inverse Method**: Recommended if you have a rough estimation of the kinetic parameters.
+* **Pseudo-inverse Method**: Recommended if the user has a rough estimation of the kinetic parameters.
 * **Explicit Method**: Use this if no prior information about kinetic parameters is available. Then feed the optimized kinetic rates to the cell *Reaction Model Parameters* and run **Step 8** again, next in **Step 9** choose the **Pseudo-inverse Method** to obtain the final fitting.  
 
 **Step 11**: This cell *(Model's plots)* will plot the modeled data:
