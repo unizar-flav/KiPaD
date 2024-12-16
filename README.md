@@ -27,8 +27,8 @@ Here:
 
 **Step 3**: Run the next cell *(Upload files)*. It supports multiple files provided they have distinct time-points $t_m$. For example:
 1. A file with time-points that ranges from 0.01 to 0.1 s in increments of 0.01 s.
-2. A file with time-points that ranges from 1 to 100 s in increments of 1s.
-3. A file with a single time-point at 0.00s.
+2. A file with time-points that ranges from 1 to 100 s in increments of 1 s.
+3. A file with a single time-point at 0.00s .
 The function *lee_espectro()* will merge the files into a single DataFrame sorting the data by time-points in ascending order.
 
 **Step 4**: Afterwards the next cell *(Slicing Dataset with labels)* allows the user to slice the dataset uploaded row and column-wise using the time-points and wavelengths, respectively, to delimit the sliced dataset. To perform slicing, first check the *Slicing* box, then introduce the respective values as needed.
