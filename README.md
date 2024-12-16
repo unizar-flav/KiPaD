@@ -84,7 +84,7 @@ graph TD;
 **Step 12**: In this cell *(Model and Experimental data comparison)* plots similar plots to those of Step 5 and Step 9, however, in this case the plots will display only one series from two different dataset (one Experimental data and the other Model data). The user may change the series displayed by using the dropdown that appears below the plots after executing the cell.
 
 
-**Step 13**: The final cell *(Export results)* will gather all the generated data and save it as a set of CSV files within a ZIP archive. List of data:
+**Step 13**: The final cell *(Export results)* will gather all the inputted generated data and save it as a set of CSV files within a ZIP archive. List of data:
 1. Original experimental data
 2. Denoised experimental data
 3. Model data
