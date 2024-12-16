@@ -23,7 +23,7 @@ Here:
 * **$\lambda_n$**: Wavelength values, in nm , listed in increasing order.
 * **$t_m$**: Time points, also listed in increasing order.
 
-**Step 2**: Load the modules and functions *(Modules and functions)*. This step only needs to be perform once regardless of the number of datasets processed.
+**Step 2**: Load the libraries, modules and functions *(Modules and functions)*. This step only needs to be perform once regardless of the number of datasets processed.
 
 **Step 3**: Run the next cell *(Upload files)*. It supports multiple files provided they have distinct time-points $t_m$. For example:
 1. A file with time-points that ranges from 0.01 to 0.1 s in increments of 0.01 s.
