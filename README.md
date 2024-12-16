@@ -41,7 +41,7 @@ The function *lee_espectro()* will merge the files into a single DataFrame sorti
 2. **Entropy Method**: Evaluates the data's uncertainty explained by singular values. By selecting a threshold (from 0 to 1, default: *entropy_threshold* to 0.9), the method identifies the smallest number of singular values needed to exceed this level, ensuring the specified uncertainty is explained.
 3. **Broken-Stick Method**: Compares the singular values to a random "broken stick" distribution. SSVs are identified as those exceeding the corresponding values from this distribution, indicating significant components in the data.
 
-Each method prints the number of SSVs they determined. These values can be interepreted as the number of significant "absorbers" (species with spectroscopic properties), providing insight into the potential number of reaction species under study.
+Each method prints the number of SSVs they determined. These values can be interepreted as a model-free estimation of the number of significant "absorbers" (species with spectroscopic properties), providing insight into the potential number of reaction species under study.
 
 
 **Step 7**:In the next cell *(Dimensionality reduction and Matrix Approximation)*, the user is prompted to input the number of SSVs( based on the results from Step 5). The script will then approximate the original data using only the significant singular values, which capture the primary variations in the data, effectively reducing noise. If the user does NOT want matrix approximation to happen, uncheck the *Answer* box.
