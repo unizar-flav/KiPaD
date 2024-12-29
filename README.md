@@ -5,7 +5,7 @@
 KiPaD is a python script aimed to calculate the observed rate constants and spectroscopic properties of intermediate species, from data obtained from multiwavelength time-resolved absorption spectroscopy by using stopped-flow.
 
 ## Usage
-This software is created in Google Colab. To access it, click on the Google Colab badge above or on this [link](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb).
+This software is developed in Google Colab. To access it, click on the Google Colab badge above or on this [link](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb).
 
 **Step 1**: Verify the format of the data. It must be a CSV file and with the following structure:
 
@@ -23,7 +23,7 @@ Here:
 * **$\lambda_n$**: Wavelength values, in nm , listed in increasing order.
 * **$t_m$**: Time points, also listed in increasing order.
 
-**Step 2**: Load the libraries, modules and functions *(Modules and functions)*. This step only needs to be perform once regardless of the number of datasets processed.
+**Step 2**: Load the libraries, modules and functions *(Modules and functions)*. This step only needs to be performed once regardless of the number of datasets processed.
 
 **Step 3**: Run the next cell *(Upload files)*. It supports multiple files provided they have distinct time-points $t_m$. For example:
 1. A file with time-points that ranges from 0.01 to 0.1 s in increments of 0.01 s.
@@ -84,10 +84,10 @@ graph TD;
 **Step 12**: In this cell *(Model and Experimental data comparison)* plots similar plots to those of Step 5 and Step 9, however, in this case the plots will display only one series from two different dataset (one Experimental data and the other Model data). The user may change the series displayed by using the dropdown that appears below the plots after executing the cell.
 
 
-**Step 13**: The final cell *(Export results)* will gather all the inputted generated data and save it as a set of CSV files within a ZIP archive. List of data:
+**Step 13**: The final cell *(Export results)* will gather all the inputted and generated data and save it as a set of CSV files within a ZIP archive. List of data:
 1. Original experimental data
 2. Denoised experimental data
-3. Model data
+3. Modelled data
 4. Residuals (Denoised - Model data)
 5. Residuals (Original - Model data)
 6. Concentration profile
