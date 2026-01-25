@@ -1,0 +1,1068 @@
+"""
+KiPaD - Kinetic Parameters Determination
+Streamlit Application
+
+A tool for determining kinetic parameters from time-resolved spectroscopic data
+using Singular Value Decomposition (SVD) and non-linear fitting.
+"""
+
+import csv
+import io
+import zipfile
+from datetime import datetime
+import tempfile
+
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+from scipy.linalg import svd
+from scipy.stats import probplot
+import streamlit as st
+
+from functions.general import argLeastSquares, procesa
+from functions.specific import (
+    read_spectra,
+    slice_dataset,
+    scree_plot_with_fit,
+    entropy_selection,
+    broken_stick_method,
+    matrix_approximation,
+    deriv_conc,
+    Model_spectra,
+)
+
+
+# Set page config
+st.set_page_config(
+    page_title="KiPaD",
+    page_icon="🧪",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Title and Description
+st.title("KiPaD - Kinetic Parameters Determination")
+st.markdown("*Determination of kinetic parameters from time-resolved spectroscopic data*")
+
+
+# ==================== HELPER FUNCTIONS ====================
+
+def show_footer():
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("""
+    by Mario Asensio Franco
+
+    with contributions from:
+    - Sergio Boneta Martínez
+    - José Carlos Ciria Coscolluela
+    - Milagros Medina Trullenque
+
+    GPLv3 © 2024-2026 \\
+    @ Universidad de Zaragoza
+    """)
+    
+@st.cache_data
+def cached_svd(data_array):
+    """Cached wrapper for SVD calculation"""
+    return svd(data_array, full_matrices=False)
+
+def create_plotly_2d_plot(df, title, x_axis, y_axis, legend_title):
+    """Creates a 2D Plotly plot from the given DataFrame."""
+    # Handle duplicate indices by averaging them
+    if df.index.duplicated().any():
+        df = df.groupby(df.index).mean()
+
+    fig = go.Figure()
+
+    # Generate a rainbow colorscale
+    n_lines = len(df.columns)
+    colors = [f'hsl({h}, 70%, 50%)' for h in np.linspace(0, 300, n_lines)]
+
+    for idx, col in enumerate(df.columns):
+        fig.add_trace(go.Scatter(
+            x=df.index.astype(float),
+            y=df[col].values,
+            mode='lines',
+            name=str(col),
+            line=dict(color=colors[idx], width=2),
+            visible=True  # Show all traces by default
+        ))
+
+    fig.update_layout(
+        title=title,
+        xaxis_title=x_axis,
+        yaxis_title=y_axis,
+        legend_title=legend_title,
+        height=600,
+        showlegend=True,
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=1.02
+        )
+    )
+
+    return fig
+
+
+def create_plotly_comparison_plot(df1, df2, title, x_axis, y_axis, legend_title, df1_label, df2_label):
+    """Creates a Plotly plot comparing two DataFrames."""
+    # Handle duplicate indices by averaging them
+    if df1.index.duplicated().any():
+        df1 = df1.groupby(df1.index).mean()
+    if df2.index.duplicated().any():
+        df2 = df2.groupby(df2.index).mean()
+
+    fig = go.Figure()
+
+    # Colors for the two dataframes
+    df1_color = '#1f77b4'  # Blue
+    df2_color = '#ff7f0e'  # Orange
+
+    for col in df1.columns:
+        # Add df1 trace
+        fig.add_trace(go.Scatter(
+            x=df1.index.astype(float),
+            y=df1[col].values,
+            mode='lines',
+            name=f'{df1_label} - {col}',
+            line=dict(color=df1_color, width=2),
+            visible='legendonly'
+        ))
+        # Add df2 trace
+        fig.add_trace(go.Scatter(
+            x=df2.index.astype(float),
+            y=df2[col].values,
+            mode='lines',
+            name=f'{df2_label} - {col}',
+            line=dict(color=df2_color, width=2, dash='dash'),
+            visible='legendonly'
+        ))
+
+    # Make first pair visible
+    if len(fig.data) >= 2:
+        fig.data[0].visible = True
+        fig.data[1].visible = True
+
+    fig.update_layout(
+        title=title,
+        xaxis_title=x_axis,
+        yaxis_title=y_axis,
+        legend_title=legend_title,
+        height=600,
+        showlegend=True
+    )
+
+    return fig
+
+
+def create_plotly_qq_plot(residuals_dict, title):
+    """Creates a QQ plot using Plotly for one or multiple series."""
+    fig = go.Figure()
+
+    # Handle backward compatibility: if a Series is passed, convert to dict
+    if isinstance(residuals_dict, pd.Series):
+        residuals_dict = {"Residuals": residuals_dict}
+
+    # Generate colors using a colormap
+    colors = px.colors.qualitative.Plotly
+
+    all_theoretical = []
+
+    for idx, (label, residuals_series) in enumerate(residuals_dict.items()):
+        residuals = residuals_series.dropna().values
+        (qq_theoretical, qq_residuals), (slope, intercept, _) = probplot(residuals, dist="norm")
+
+        all_theoretical.extend(qq_theoretical)
+        color = colors[idx % len(colors)]
+
+        # Add scatter for QQ plot
+        fig.add_trace(go.Scatter(
+            x=qq_theoretical,
+            y=qq_residuals,
+            mode='markers',
+            name=str(label),
+            marker=dict(color=color, size=8)
+        ))
+
+    # Add single theoretical line based on all data
+    if all_theoretical:
+        x_line = [min(all_theoretical), max(all_theoretical)]
+        y_line = x_line  # Standard normal: y = x
+
+        fig.add_trace(go.Scatter(
+            x=x_line,
+            y=y_line,
+            mode='lines',
+            name='Theoretical',
+            line=dict(color='black', width=2, dash='dash')
+        ))
+
+    fig.update_layout(
+        title=title,
+        xaxis_title="Theoretical Quantiles",
+        yaxis_title="Residual Quantiles",
+        height=500,
+        showlegend=True
+    )
+
+    return fig
+
+
+def create_scree_plot_plotly(singular_values, threshold):
+    """Creates a scree plot using Plotly with linear fit analysis."""
+    from sklearn.linear_model import LinearRegression
+
+    n_values = len(singular_values)
+    SSVs = 0
+    X_final, y_final_pred = None, None
+
+    # Iterate through singular values, trying linear fits
+    for i in range(2, n_values + 1):
+        X = np.arange(1, i + 1).reshape(-1, 1)
+        y = singular_values[:i]
+
+        model = LinearRegression().fit(X, y)
+        r_squared = model.score(X, y)
+
+        if r_squared < threshold:
+            SSVs = i - 1
+            break
+        else:
+            SSVs = i
+        X_final = np.arange(1, SSVs + 1).reshape(-1, 1)
+        y_final_pred = model.predict(X_final)
+
+    fig = go.Figure()
+
+    # Plot singular values
+    indices = np.arange(1, n_values + 1)
+    fig.add_trace(go.Scatter(
+        x=indices,
+        y=singular_values,
+        mode='markers',
+        name='Singular Values',
+        marker=dict(color='blue', size=10)
+    ))
+
+    # Plot linear fit
+    if X_final is not None and y_final_pred is not None:
+        fig.add_trace(go.Scatter(
+            x=X_final.flatten(),
+            y=y_final_pred,
+            mode='lines',
+            name='Linear Fit',
+            line=dict(color='red', width=2, dash='dash')
+        ))
+
+    # Add vertical line at cutoff
+    fig.add_vline(x=SSVs, line_dash="dash", line_color="green",
+                  annotation_text=f"SSVs = {SSVs}", annotation_position="top right")
+
+    fig.update_layout(
+        title="Scree Plot with Linear Fit",
+        xaxis_title="Singular Value Index",
+        yaxis_title="Singular Values",
+        height=500
+    )
+
+    return fig, SSVs
+
+
+def create_broken_stick_plot_plotly(singular_values):
+    """Creates a broken stick plot using Plotly."""
+    k = len(singular_values)
+
+    # Calculate broken stick values
+    broken_stick = np.zeros(k)
+    for i in range(1, k + 1):
+        broken_stick[i - 1] = (1 / k) * np.sum([1 / j for j in range(i, k + 1)])
+
+    # Normalize singular values
+    singular_values_squared_n = singular_values**2 / np.sum(singular_values**2)
+
+    fig = go.Figure()
+
+    indices = np.arange(1, k + 1)
+
+    # Plot singular values
+    fig.add_trace(go.Scatter(
+        x=indices,
+        y=singular_values_squared_n,
+        mode='lines+markers',
+        name='Singular Values',
+        line=dict(color='blue', width=2),
+        marker=dict(size=8)
+    ))
+
+    # Plot broken stick values
+    fig.add_trace(go.Scatter(
+        x=indices,
+        y=broken_stick,
+        mode='lines+markers',
+        name='Broken Stick',
+        line=dict(color='red', width=2, dash='dash'),
+        marker=dict(size=8)
+    ))
+
+    # Determine SSVs
+    SSVs = 0
+    for i in range(k):
+        if singular_values_squared_n[i] > broken_stick[i]:
+            SSVs += 1
+        else:
+            break
+
+    fig.update_layout(
+        title="Broken Stick Model vs Singular Values",
+        xaxis_title="Index",
+        yaxis_title="Proportion of Variance",
+        height=500
+    )
+
+    return fig, SSVs
+
+
+# ==================== SIDEBAR & DATA LOADING ====================
+
+st.sidebar.header("1. Upload Spectra")
+uploaded_files = st.sidebar.file_uploader(
+    "Upload CSV files",
+    help="Upload one or multiple time-resolved spectra CSV files.",
+    accept_multiple_files=True,
+    type=['csv']
+)
+
+if not uploaded_files:
+    st.info("Please upload spectra CSV files in the sidebar to begin.")
+    show_footer()
+    st.stop()
+
+# Initialize session state
+if 'datos_org' not in st.session_state:
+    st.session_state.datos_org = None
+if 'datos' not in st.session_state:
+    st.session_state.datos = None
+if 'file_name' not in st.session_state:
+    st.session_state.file_name = None
+if 'datos_approx_df' not in st.session_state:
+    st.session_state.datos_approx_df = None
+if 'sol' not in st.session_state:
+    st.session_state.sol = None
+if 'Model' not in st.session_state:
+    st.session_state.Model = None
+
+with st.spinner("Reading files..."):
+    # Save uploaded files temporarily
+    temp_files = []
+    for uploaded_file in uploaded_files:
+        # Check if file is already closed (if rerun)
+        try:
+            uploaded_file.seek(0)
+            content = uploaded_file.read().decode('utf-8')
+        except ValueError:
+            # Re-upload or error handling if file pointer closed
+            content = ""
+            
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.csv', mode='w') as tmp:
+            tmp.write(content)
+            temp_files.append(tmp.name)
+            # Reset pointer
+            try:
+                uploaded_file.seek(0)
+            except:
+                pass
+    
+    # Read spectra
+    datos_org, file_name = read_spectra(temp_files)
+
+st.session_state.datos_org = datos_org
+st.session_state.file_name = file_name
+st.success(f"Successfully loaded data: {file_name}")
+
+# ==================== DATA PRE-PROCESSING (SIDEBAR) ====================
+
+st.sidebar.header("2. Pre-processing")
+st.sidebar.subheader("Dataset Slicing")
+
+with st.sidebar.expander("Slice Dataset Options", expanded=False):
+    do_slice = st.toggle("Perform dataset slicing", value=False)
+    
+    st.markdown("**Time Range**")
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        t_start = st.number_input("Start Time", value=None, format="%.6f",
+                                   help="Leave empty to use minimum time")
+    with col_t2:
+        t_end = st.number_input("End Time", value=None, format="%.6f",
+                                 help="Leave empty to use maximum time")
+
+    st.markdown("**Wavelength Range**")
+    col_w1, col_w2 = st.columns(2)
+    with col_w1:
+        wave_start = st.number_input("Start Wavelength (nm)", value=None, format="%.2f",
+                                      help="Leave empty to use minimum wavelength")
+    with col_w2:
+        wave_end = st.number_input("End Wavelength (nm)", value=None, format="%.2f",
+                                    help="Leave empty to use maximum wavelength")
+
+if do_slice:
+    st.session_state.datos = slice_dataset(
+        st.session_state.datos_org.copy(),
+        t_start, t_end, wave_start, wave_end
+    )
+    st.sidebar.success(f"Sliced data shape: {st.session_state.datos.shape}")
+else:
+    st.session_state.datos = st.session_state.datos_org.copy()
+
+datos = st.session_state.datos
+
+# ==================== SPECTRA PLOTS ====================
+
+st.header("Spectra Visualization")
+
+tab1, tab2 = st.tabs(["Wavelength Plot", "Time Plot"])
+
+with tab1:
+    df_transposed = datos.T
+    fig_wave = create_plotly_2d_plot(
+        df_transposed,
+        title=f"Absorbance vs Wavelength // {file_name}",
+        x_axis="Wavelength (nm)",
+        y_axis="Absorbance",
+        legend_title="Time (s)"
+    )
+    st.plotly_chart(fig_wave, width='stretch')
+
+with tab2:
+    fig_time = create_plotly_2d_plot(
+        datos,
+        title=f"Absorbance vs Time // {file_name}",
+        x_axis="Time (s)",
+        y_axis="Absorbance",
+        legend_title="Wavelength (nm)"
+    )
+    st.plotly_chart(fig_time, width='stretch')
+
+# ==================== SVD ANALYSIS ====================
+
+st.header("Singular Value Decomposition (SVD)")
+
+st.sidebar.header("3. SVD Analysis")
+
+scree_plot_th = st.sidebar.slider(
+    "Scree Plot Threshold",
+    min_value=0.5,
+    max_value=0.99,
+    value=0.9,
+    step=0.01,
+    help="R² threshold for the scree plot linear fit method"
+)
+
+entropy_threshold = st.sidebar.slider(
+    "Entropy Threshold",
+    min_value=0.5,
+    max_value=0.99,
+    value=0.9,
+    step=0.01,
+    help="Cumulative entropy threshold for entropy-based selection"
+)
+
+# Perform SVD (Cached)
+datos_array = datos.to_numpy()
+Times = datos.index
+Wavelengths = datos.columns
+
+U, Sigma, Vt = cached_svd(datos_array)
+
+# Determine SSVs using different methods
+fig_scree, n_significant_scree_plot = create_scree_plot_plotly(Sigma, scree_plot_th)
+n_significant_entropy = entropy_selection(Sigma, entropy_threshold)
+fig_broken, n_significant_broken_stick = create_broken_stick_plot_plotly(Sigma)
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Scree Plot Method", n_significant_scree_plot)
+with col2:
+    st.metric("Entropy Method", n_significant_entropy)
+with col3:
+    st.metric("Broken Stick Method", n_significant_broken_stick)
+
+tab1, tab2 = st.tabs(["Scree Plot", "Broken Stick Plot"])
+
+with tab1:
+    st.plotly_chart(fig_scree, width='stretch')
+
+with tab2:
+    st.plotly_chart(fig_broken, width='stretch')
+
+with st.expander("View SVD Matrices", expanded=False):
+    st.subheader("Singular Values (Σ)")
+    st.dataframe(pd.DataFrame(Sigma, columns=["Singular Values"]))
+
+# ==================== MATRIX APPROXIMATION ====================
+
+st.header("Dimensionality Reduction")
+
+st.sidebar.header("4. Matrix Approximation")
+
+do_approximation = st.sidebar.toggle("Perform Matrix Approximation", value=True)
+
+SSVs = st.sidebar.number_input(
+    "Number of SSVs",
+    min_value=1,
+    max_value=min(20, len(Sigma)) if len(Sigma) > 0 else 1,
+    value=min(3, len(Sigma)) if len(Sigma) > 0 else 1,
+    step=1,
+    help="Number of significant singular values to use for approximation"
+)
+
+if do_approximation:
+    datos_approx = matrix_approximation(datos_array, SSVs)
+    datos_approx_df = pd.DataFrame(datos_approx, index=Times, columns=Wavelengths)
+    st.session_state.datos_approx_df = datos_approx_df
+    st.success(f"Matrix approximation performed using {SSVs} singular values.")
+else:
+    st.session_state.datos_approx_df = datos.copy()
+    st.info("Matrix approximation was not performed. Using original data.")
+
+# Approximated spectra plots
+with st.expander("View Approximated Spectra", expanded=False):
+    datos_approx_df = st.session_state.datos_approx_df
+
+    tab1, tab2 = st.tabs(["Wavelength Plot (Approx)", "Time Plot (Approx)"])
+
+    with tab1:
+        df_approx_transposed = datos_approx_df.T
+        fig_wave_approx = create_plotly_2d_plot(
+            df_approx_transposed,
+            title=f"Approximated Absorbance vs Wavelength // {file_name}",
+            x_axis="Wavelength (nm)",
+            y_axis="Absorbance",
+            legend_title="Time (s)"
+        )
+        st.plotly_chart(fig_wave_approx, width='stretch')
+
+    with tab2:
+        fig_time_approx = create_plotly_2d_plot(
+            datos_approx_df,
+            title=f"Approximated Absorbance vs Time // {file_name}",
+            x_axis="Time (s)",
+            y_axis="Absorbance",
+            legend_title="Wavelength (nm)"
+        )
+        st.plotly_chart(fig_time_approx, width='stretch')
+
+# ==================== REACTION MODEL PARAMETERS ====================
+
+st.header("Reaction Model Parameters")
+
+st.sidebar.header("5. Reaction Model")
+
+n_species = st.sidebar.slider(
+    "Number of Species",
+    min_value=2,
+    max_value=4,
+    value=3,
+    step=1
+)
+
+pathlength = st.sidebar.number_input(
+    "Pathlength (cm)",
+    min_value=0.01,
+    max_value=10.0,
+    value=1.0,
+    step=0.1
+)
+
+Lower_bound = st.sidebar.checkbox("Apply Lower Bound to Spectra", value=False)
+if Lower_bound:
+    min_value = st.sidebar.number_input("Minimum Value", value=0.0)
+else:
+    min_value = 0
+
+# Initial concentrations
+st.subheader("Initial Concentrations (μM)")
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    A0 = st.number_input("A0", value=0.0, format="%.4f") if n_species >= 1 else 0.0
+with col2:
+    B0 = st.number_input("B0", value=0.0, format="%.4f") if n_species >= 2 else 0.0
+with col3:
+    C0 = st.number_input("C0", value=0.0, format="%.4f") if n_species >= 3 else 0.0
+with col4:
+    D0 = st.number_input("D0", value=0.0, format="%.4f") if n_species >= 4 else 0.0
+
+# Rate constants
+st.subheader("Rate Constants (1/s)")
+st.markdown("Check the box to **fix** the parameter (not optimized)")
+
+# Create rate constants input
+rate_constants = {}
+
+col1, col2, col3 = st.columns([2, 1, 1])
+with col1:
+    k1 = st.number_input("k1", value=0.0, format="%.6f", key="k1_val")
+with col2:
+    k1_fixed = st.checkbox("Fixed", value=True, key="k1_fixed")
+
+col1, col2, col3 = st.columns([2, 1, 1])
+with col1:
+    k_1 = st.number_input("k₋₁", value=0.0, format="%.6f", key="k_1_val")
+with col2:
+    k_1_fixed = st.checkbox("Fixed", value=True, key="k_1_fixed")
+
+col1, col2, col3 = st.columns([2, 1, 1])
+with col1:
+    k2 = st.number_input("k2", value=0.0, format="%.6f", key="k2_val")
+with col2:
+    k2_fixed = st.checkbox("Fixed", value=True, key="k2_fixed")
+
+col1, col2, col3 = st.columns([2, 1, 1])
+with col1:
+    k_2 = st.number_input("k₋₂", value=0.0, format="%.6f", key="k_2_val")
+with col2:
+    k_2_fixed = st.checkbox("Fixed", value=True, key="k_2_fixed")
+
+col1, col2, col3 = st.columns([2, 1, 1])
+with col1:
+    k3 = st.number_input("k3", value=0.0, format="%.6f", key="k3_val")
+with col2:
+    k3_fixed = st.checkbox("Fixed", value=True, key="k3_fixed")
+
+col1, col2, col3 = st.columns([2, 1, 1])
+with col1:
+    k_3 = st.number_input("k₋₃", value=0.0, format="%.6f", key="k_3_val")
+with col2:
+    k_3_fixed = st.checkbox("Fixed", value=True, key="k_3_fixed")
+
+# Define rate constants and their fixed status
+rate_constants_data = {
+    'k1': (k1, k1_fixed),
+    'k_1': (k_1, k_1_fixed),
+    'k2': (k2, k2_fixed),
+    'k_2': (k_2, k_2_fixed),
+    'k3': (k3, k3_fixed),
+    'k_3': (k_3, k_3_fixed),
+}
+
+# Classify into fixed and variable
+fixed_ks = {}
+variable_ks = {}
+
+for rate, (value, is_fixed) in rate_constants_data.items():
+    if is_fixed:
+        fixed_ks[rate] = value
+    else:
+        variable_ks[rate] = value
+
+# Initial concentrations dictionary
+concentration_data = {
+    'A0': A0,
+    'B0': B0,
+    'C0': C0,
+    'D0': D0,
+}
+species_list = ['A0', 'B0', 'C0', 'D0'][:n_species]
+initial_conc = {key: concentration_data[key] for key in species_list}
+
+initial_ks = {**fixed_ks, **variable_ks}
+
+# Display summary
+with st.expander("Parameter Summary", expanded=False):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.write("**Fixed Rate Constants:**")
+        for key, value in fixed_ks.items():
+            st.write(f"  {key} = {value}")
+    with col2:
+        st.write("**Variable Rate Constants:**")
+        for key, value in variable_ks.items():
+            st.write(f"  {key} = {value}")
+    with col3:
+        st.write("**Initial Concentrations:**")
+        for key, value in initial_conc.items():
+            st.write(f"  {key} = {value}")
+
+# ==================== FITTING ====================
+
+st.header("Fitting")
+
+Method = st.selectbox(
+    "Method for Estimating Spectroscopic Species",
+    options=["Pseudo-inverse", "Explicit", "Implicit"],
+    index=0,
+    help="""
+    **Pseudo-inverse**: Best fitting, requires reasonable first estimation of rate constants.
+    **Explicit**: Use to obtain initial idea of rate constants magnitude.
+    **Implicit**: Alternative implicit approach.
+    """
+)
+
+run_fitting = st.button("Run Fitting", type="primary")
+
+if run_fitting:
+    if not variable_ks:
+        st.warning("No variable rate constants selected for optimization. Please uncheck 'Fixed' for at least one rate constant.")
+    else:
+        datos_approx_df = st.session_state.datos_approx_df
+
+        initial_params = {**initial_ks}
+        initial_params_var = {**variable_ks}
+        nombrParVar = list(initial_params_var.keys())
+
+        # For Explicit method, ensure initial rate constants are not zero
+        # to prevent singular matrices during concentration profile calculation
+        if Method == "Explicit" or Method == "Implicit":
+            for key in nombrParVar:
+                if initial_params[key] == 0:
+                    initial_params[key] = 0.1
+                    # st.info(f"{Method} method: Auto-initializing {key} to 0.1")
+
+        fKwargs = dict(
+            t=datos_approx_df.index.values,
+            f_deriv=deriv_conc,
+            Conc_0=initial_conc,
+            abs=datos_approx_df,
+            pathlength=pathlength,
+            original_data=datos,
+            method=Method,
+            Lower_bound=Lower_bound,
+            min_value=min_value,
+            fitting=True,
+        )
+
+        with st.spinner("Running optimization... This may take a while."):
+            try:
+                sol = procesa(
+                    argLeastSquares=argLeastSquares,
+                    dictParEstim=initial_params,
+                    nombrParVar=nombrParVar,
+                    f=Model_spectra,
+                    fKwargs=fKwargs,
+                    Y=datos_approx_df.values.flatten(),
+                )
+                st.session_state.sol = sol
+
+                # Generate Model results
+                ad_parameters = sol['parAjustados']
+                Model = Model_spectra(
+                    ad_parameters,
+                    deriv_conc,
+                    initial_conc,
+                    datos_approx_df.index,
+                    datos_approx_df,
+                    pathlength,
+                    datos,
+                    Method,
+                    Lower_bound,
+                    min_value,
+                    fitting=False,
+                )
+                st.session_state.Model = Model
+
+                st.success("Fitting completed successfully!")
+
+            except Exception as e:
+                st.error(f"Fitting failed: {str(e)}")
+                st.exception(e)
+
+# ==================== RESULTS ====================
+
+if st.session_state.sol is not None and st.session_state.Model is not None:
+    st.header("Results")
+
+    sol = st.session_state.sol
+    Model = st.session_state.Model
+
+    # Display fitted parameters
+    st.subheader("Fitted Parameters")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**Adjusted Rate Constants:**")
+        for key, value in sol['parAjustados'].items():
+            std_key = f"{key}_std"
+            std_val = sol['sdPar'].get(std_key, "")
+            if std_val and std_val != "":
+                st.write(f"  {key} = {value:.6e} ± {std_val:.6e}")
+            else:
+                st.write(f"  {key} = {value:.6e}")
+
+    with col2:
+        st.metric("R²", f"{sol['R2']:.6f}")
+
+    # Plots
+    st.subheader("Model Plots")
+
+    df_e = Model['D_model']
+    df_conc = Model['C_matrix']
+    df_spectra = Model['S_matrix'].T
+
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Modelled Spectra",
+        "Concentration Profile",
+        "Species Spectra",
+        "Residuals"
+    ])
+
+    with tab1:
+        col1, col2 = st.columns(2)
+        with col1:
+            fig = create_plotly_2d_plot(
+                df_e.T,
+                title=f"Modelled Absorbance vs Wavelength",
+                x_axis="Wavelength (nm)",
+                y_axis="Absorbance",
+                legend_title="Time (s)"
+            )
+            st.plotly_chart(fig, width='stretch')
+        with col2:
+            fig = create_plotly_2d_plot(
+                df_e,
+                title=f"Modelled Absorbance vs Time",
+                x_axis="Time (s)",
+                y_axis="Absorbance",
+                legend_title="Wavelength (nm)"
+            )
+            st.plotly_chart(fig, width='stretch')
+
+    with tab2:
+        fig = create_plotly_2d_plot(
+            df_conc,
+            title=f"Concentration over Time",
+            x_axis="Time (s)",
+            y_axis="Concentration (μM)",
+            legend_title="Species"
+        )
+        st.plotly_chart(fig, width='stretch')
+
+    with tab3:
+        fig = create_plotly_2d_plot(
+            df_spectra,
+            title=f"Spectroscopic Species Spectra",
+            x_axis="Wavelength (nm)",
+            y_axis="Extinction Coefficient (1/(μM·cm))",
+            legend_title="Species"
+        )
+        st.plotly_chart(fig, width='stretch')
+
+    with tab4:
+        residual_type = st.radio(
+            "Residual Type",
+            options=["Original - Modelled", "Denoised - Modelled"],
+            horizontal=True
+        )
+
+        if residual_type == "Original - Modelled":
+            df_res = Model['residuals']
+            r_title = "(Original - Modelled)"
+        else:
+            df_res = Model['residuals_denoised']
+            r_title = "(Denoised - Modelled)"
+
+        col1, col2 = st.columns(2)
+        with col1:
+            fig = create_plotly_2d_plot(
+                df_res.T,
+                title=f"Residuals vs Wavelength {r_title}",
+                x_axis="Wavelength (nm)",
+                y_axis="Absorbance",
+                legend_title="Time (s)"
+            )
+            st.plotly_chart(fig, width='stretch')
+        with col2:
+            fig = create_plotly_2d_plot(
+                df_res,
+                title=f"Residuals vs Time {r_title}",
+                x_axis="Time (s)",
+                y_axis="Absorbance",
+                legend_title="Wavelength (nm)"
+            )
+            st.plotly_chart(fig, width='stretch')
+
+    # Comparison plots
+    st.subheader("Experimental vs Modelled Comparison")
+
+    comparison_data = st.radio(
+        "Experimental Data to Compare",
+        options=["Original", "Denoised"],
+        horizontal=True
+    )
+
+    if comparison_data == "Original":
+        df1 = datos
+    else:
+        df1 = st.session_state.datos_approx_df
+
+    df2 = Model['D_model']
+
+    col1, col2 = st.columns(2)
+    with col1:
+        fig = create_plotly_comparison_plot(
+            df1.T, df2.T,
+            title="Absorbance vs Wavelength",
+            x_axis="Wavelength (nm)",
+            y_axis="Absorbance",
+            legend_title="Time (s)",
+            df1_label=comparison_data,
+            df2_label="Model"
+        )
+        st.plotly_chart(fig, width='stretch')
+
+    with col2:
+        fig = create_plotly_comparison_plot(
+            df1, df2,
+            title="Absorbance vs Time",
+            x_axis="Time (s)",
+            y_axis="Absorbance",
+            legend_title="Wavelength (nm)",
+            df1_label=comparison_data,
+            df2_label="Model"
+        )
+        st.plotly_chart(fig, width='stretch')
+
+    # QQ Plots
+    st.subheader("QQ Plots of Residuals")
+
+    qq_residual_type = st.radio(
+        "Residual Type for QQ Plot",
+        options=["Original - Modelled", "Denoised - Modelled"],
+        horizontal=True,
+        key="qq_residual"
+    )
+
+    if qq_residual_type == "Original - Modelled":
+        residuals = Model['residuals']
+    else:
+        residuals = Model['residuals_denoised']
+
+    # Handle duplicate indices by averaging
+    if residuals.index.duplicated().any():
+        residuals_clean = residuals.groupby(residuals.index).mean()
+    else:
+        residuals_clean = residuals
+
+    # Select a series for QQ plot
+    selected_cols = st.multiselect(
+        "Select Wavelength(s) for QQ Plot (Time Series)",
+        options=residuals_clean.columns.tolist(),
+        default=[residuals_clean.columns.tolist()[0]] if len(residuals_clean.columns) > 0 else []
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if selected_cols:
+            residuals_dict = {f"λ={col}": residuals_clean[col] for col in selected_cols}
+            fig = create_plotly_qq_plot(
+                residuals_dict,
+                f"QQ Plot - Time Series ({len(selected_cols)} wavelength(s))"
+            )
+            st.plotly_chart(fig, width='stretch')
+        else:
+            st.info("Select at least one wavelength to display the QQ plot.")
+
+    with col2:
+        selected_time = st.selectbox(
+            "Select Time for QQ Plot (Wavelength Series)",
+            options=residuals_clean.index.tolist()
+        )
+        # Get the row as a Series (transpose and select column)
+        residuals_at_time = residuals_clean.loc[selected_time]
+        if isinstance(residuals_at_time, pd.DataFrame):
+            # If still a DataFrame (shouldn't happen after groupby), take mean
+            residuals_at_time = residuals_at_time.mean()
+        fig = create_plotly_qq_plot(
+            residuals_at_time,
+            f"QQ Plot - Wavelength Series (t = {selected_time})"
+        )
+        st.plotly_chart(fig, width='stretch')
+
+    # ==================== EXPORT ====================
+
+    st.header("Export Results")
+
+    export_name = st.text_input("Export Filename Prefix", value="spectra")
+
+    # Create a BytesIO object to hold the zip file
+    zip_buffer = io.BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Original experimental data
+            zipf.writestr('Original_experimental_data.csv', Model['D_orig'].to_csv())
+            zipf.writestr('Original_experimental_data_TR.csv', Model['D_orig'].T.to_csv())
+
+            # Denoised experimental data
+            zipf.writestr('Denoised_experimental_data.csv', Model['D_approx'].to_csv())
+            zipf.writestr('Denoised_experimental_data_TR.csv', Model['D_approx'].T.to_csv())
+
+            # Modeled data
+            zipf.writestr('Modelled_data.csv', Model['D_model'].to_csv())
+            zipf.writestr('Modelled_data_TR.csv', Model['D_model'].T.to_csv())
+
+            # Residuals from Original - Modeled
+            zipf.writestr('Residuals_OrigMod.csv', Model['residuals'].to_csv())
+            zipf.writestr('Residuals_OrigMod_TR.csv', Model['residuals'].T.to_csv())
+
+            # Residuals from Denoised - Modeled
+            zipf.writestr('Residuals_DenMod.csv', Model['residuals_denoised'].to_csv())
+            zipf.writestr('Residuals_DenMod_TR.csv', Model['residuals_denoised'].T.to_csv())
+
+            # Concentration profile
+            zipf.writestr('Concentration_profile.csv', Model['C_matrix'].to_csv())
+
+            # Spectroscopic species
+            zipf.writestr('Spectroscopic_species.csv', Model['S_matrix'].to_csv())
+
+            # Fitting results
+            fitting_csv = io.StringIO()
+            writer = csv.writer(fitting_csv)
+
+            writer.writerow([''] * 7)
+            writer.writerow(['n_species', n_species])
+            writer.writerow(['pathlength (cm)', pathlength])
+            writer.writerow([''] * 7)
+
+            writer.writerow(['INITIAL CONCENTRATIONS:'])
+            for key, value in initial_conc.items():
+                writer.writerow([key, value])
+            writer.writerow([''] * 7)
+
+            writer.writerow(['INITIAL ks', '', 'ADJUSTED ks', '', 'STD ks'])
+            for k_name in ['k1', 'k_1', 'k2', 'k_2', 'k3', 'k_3']:
+                std_val = sol['sdPar'].get(f'{k_name}_std', '') if k_name in variable_ks else ''
+                writer.writerow([
+                    k_name, initial_ks[k_name], '',
+                    k_name, sol['parAjustados'][k_name], '',
+                    f'{k_name}_std', std_val
+                ])
+
+            writer.writerow([''] * 7)
+            writer.writerow(['R2', sol['R2']])
+            writer.writerow([''] * 7)
+
+            writer.writerow(['Details'])
+            writer.writerow(['cost', sol['detalles']['cost']])
+            writer.writerow(['optimality', sol['detalles']['optimality']])
+            writer.writerow(['nfev', sol['detalles']['nfev']])
+            writer.writerow(['njev', sol['detalles']['njev']])
+            writer.writerow(['status', sol['detalles']['status']])
+            writer.writerow(['message', sol['detalles']['message']])
+            writer.writerow(['success', sol['detalles']['success']])
+
+            zipf.writestr('Fitting_result.csv', fitting_csv.getvalue())
+
+    # Download button
+    current_time = datetime.now().strftime("%d%m%Y%H%M%S")
+    zip_filename = f"{export_name}_{current_time}.zip"
+
+    st.download_button(
+        label="Download Results ZIP",
+        data=zip_buffer.getvalue(),
+        file_name=zip_filename,
+        mime="application/zip"
+    )
+
+show_footer()

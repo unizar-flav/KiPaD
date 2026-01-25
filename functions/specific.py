@@ -516,11 +516,27 @@ def species_spectra(
             # Use the indices found to slice the DataFrames
             indices = list(max_indices.values())
             # Calculate the concentration for the first and last species
-            first_species_c = C_profile.loc[indices[0]].iloc[0]  # Maximum concentration of the first species
-            last_species_c = C_profile.loc[indices[-1]].iloc[-1]  # Maximum concentration of the last species
+            c_prof_0 = C_profile.loc[indices[0]]
+            if isinstance(c_prof_0, pd.DataFrame): c_prof_0 = c_prof_0.mean(axis=0)
+            first_species_c = c_prof_0.iloc[0]
+
+            c_prof_last = C_profile.loc[indices[-1]]
+            if isinstance(c_prof_last, pd.DataFrame): c_prof_last = c_prof_last.mean(axis=0)
+            last_species_c = c_prof_last.iloc[-1]
+            
+            # Prevent division by zero if concentration is too small
+            epsilon = 1e-10
+            if np.abs(first_species_c) < epsilon: first_species_c = epsilon
+            if np.abs(last_species_c) < epsilon: last_species_c = epsilon
+
             # Calculate the spectra for the first and last species
-            first_species_s = (abs.loc[indices[0]] / (pathlength * first_species_c)).to_frame().T
-            last_species_s = (abs.loc[indices[-1]] / (pathlength * last_species_c)).to_frame().T
+            abs_0 = abs.loc[indices[0]]
+            if isinstance(abs_0, pd.DataFrame): abs_0 = abs_0.mean(axis=0)
+            first_species_s = (abs_0 / (pathlength * first_species_c)).to_frame().T
+
+            abs_last = abs.loc[indices[-1]]
+            if isinstance(abs_last, pd.DataFrame): abs_last = abs_last.mean(axis=0)
+            last_species_s = (abs_last / (pathlength * last_species_c)).to_frame().T
 
             # Identify the reduced indices (excluding the first and last species)
             red_indices = indices[1:-1]
@@ -528,10 +544,18 @@ def species_spectra(
             if len(red_indices) > 0:  # Ensure red_indices is not empty
                 # Extract the relevant concentration data for the reduced species
                 reduced_conc = C_profile.loc[red_indices].iloc[:, 1:-1]
-                reduced_abs = abs.loc[red_indices] - (C_profile.loc[red_indices].iloc[:, 0].values * first_species_s.values) - (C_profile.loc[red_indices].iloc[:, -1].values * last_species_s.values)
+                
+                # Reshape concentrations for broadcasting
+                c_first_vals = C_profile.loc[red_indices].iloc[:, 0].values
+                if c_first_vals.ndim == 1: c_first_vals = c_first_vals.reshape(-1, 1)
+                
+                c_last_vals = C_profile.loc[red_indices].iloc[:, -1].values
+                if c_last_vals.ndim == 1: c_last_vals = c_last_vals.reshape(-1, 1)
+
+                reduced_abs = abs.loc[red_indices] - (c_first_vals * first_species_s.values) - (c_last_vals * last_species_s.values)
 
                 # Solve the system of equations C^-1*A = E
-                s_red = pd.DataFrame(np.dot(np.linalg.inv(reduced_conc), reduced_abs),
+                s_red = pd.DataFrame(np.dot(np.linalg.pinv(reduced_conc), reduced_abs),
                                     index=red_indices,
                                     columns=abs.columns)
                 sol_expl = pd.concat([first_species_s, s_red, last_species_s])
@@ -540,7 +564,7 @@ def species_spectra(
 
             # Assign alphabetical names to the indices (A, B, C, ...)
             alphabet_indices = [chr(65 + i) for i in range(len(indices))]  # 65 is ASCII for 'A'
-            sol_expl.index = [alphabet_indices]
+            sol_expl.index = alphabet_indices
             result = sol_expl
 
         # Implicit approach of the explicit approach above
@@ -558,7 +582,7 @@ def species_spectra(
             reduced_conc = C_profile.loc[indices]
             reduced_abs = abs.loc[indices]
             # Solve the system of equations C^-1*A = E
-            sol_imp = np.dot(np.linalg.inv(reduced_conc), reduced_abs)
+            sol_imp = np.dot(np.linalg.pinv(reduced_conc), reduced_abs)
 
             # Assign alphabetical names to the indices (A, B, C, ...)
             alphabet_indices = [chr(65 + i) for i in range(len(indices))]  # 65 is ASCII for 'A'

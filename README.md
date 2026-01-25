@@ -1,11 +1,19 @@
 # KiPaD
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb)
+[![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Open Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/streamlit/KiPaD_8.ipynb)
+[![Open Web App](https://img.shields.io/badge/Open_Web_App-Streamlit-FF4B4B?logo=streamlit)](https://unizar-flav.github.io/KiPaD/)
 
 ## Overview
 KiPaD is a python script aimed to calculate the observed rate constants and spectroscopic properties of intermediate species, from data obtained from multiwavelength time-resolved absorption spectroscopy by using stopped-flow.
 
 ## Usage
-This software is developed in Google Colab. To access it, click on the Google Colab badge above or on this [link](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb).
+
+### Web App
+The simplest method is to use the *Streamlit* application directly in your browser:
+> [**https://unizar-flav.github.io/KiPaD/**](https://unizar-flav.github.io/KiPaD/)
+
+### Jupyter Notebook
+Alternatively, this software was developed with Google Colab support. To access it, click on the Google Colab badge above or on this [link](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb).
 
 **Step 1**: Verify the format of the data. It must be a CSV file and with the following structure:
 

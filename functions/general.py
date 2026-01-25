@@ -102,6 +102,12 @@ def residualsLS(param, **kwargs) -> np.ndarray:
         [kwargs[nombr] for nombr in ['nombrParVar','parFijos','f','fKwargs','Y']]
     parametros = dict(zip(nombrParVar, param), **parFijos)
     sol = f(parametros, **fKwargs) - Y
+    
+    # Check for NaNs or Infs and handle them
+    if not np.isfinite(sol).all():
+        print(f"Warning: Residuals contain non-finite values. Replacing with large penalty.")
+        sol = np.nan_to_num(sol, nan=1e10, posinf=1e10, neginf=-1e10)
+        
     print(f'\t||residuals|| = {np.linalg.norm(sol)}')
     return sol
 
