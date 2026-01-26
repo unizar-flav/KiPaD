@@ -389,23 +389,33 @@ st.sidebar.subheader("Dataset Slicing")
 with st.sidebar.expander("Slice Dataset Options", expanded=False):
     do_slice = st.toggle("Perform dataset slicing", value=False)
     
-    st.markdown("**Time Range**")
+    # Display data info if available
+    if st.session_state.datos_org is not None:
+        min_t = float(st.session_state.datos_org.index.min())
+        max_t = float(st.session_state.datos_org.index.max())
+        min_w = float(st.session_state.datos_org.columns.min())
+        max_w = float(st.session_state.datos_org.columns.max())
+        st.info(f"Data Range:\nTime: {min_t:.2e} to {max_t:.2e} s\nWave: {min_w:.1f} to {max_w:.1f} nm")
+    else:
+        min_t = max_t = min_w = max_w = None
+
+    st.caption("Time Range (s)")
     col_t1, col_t2 = st.columns(2)
     with col_t1:
-        t_start = st.number_input("Start Time", value=None, format="%.6f",
-                                   help="Leave empty to use minimum time")
+        t_start = st.number_input("Start", value=None, format="%.6f", key="t_start_input",
+                                   min_value=min_t, max_value=max_t)
     with col_t2:
-        t_end = st.number_input("End Time", value=None, format="%.6f",
-                                 help="Leave empty to use maximum time")
+        t_end = st.number_input("End", value=None, format="%.6f", key="t_end_input",
+                                 min_value=min_t, max_value=max_t)
 
-    st.markdown("**Wavelength Range**")
+    st.caption("Wavelength Range (nm)")
     col_w1, col_w2 = st.columns(2)
     with col_w1:
-        wave_start = st.number_input("Start Wavelength (nm)", value=None, format="%.2f",
-                                      help="Leave empty to use minimum wavelength")
+        wave_start = st.number_input("Start", value=None, format="%.2f", key="w_start_input",
+                                      min_value=min_w, max_value=max_w)
     with col_w2:
-        wave_end = st.number_input("End Wavelength (nm)", value=None, format="%.2f",
-                                    help="Leave empty to use maximum wavelength")
+        wave_end = st.number_input("End", value=None, format="%.2f", key="w_end_input",
+                                    min_value=min_w, max_value=max_w)
 
 if do_slice:
     st.session_state.datos = slice_dataset(
@@ -584,78 +594,96 @@ else:
 
 # Initial concentrations
 st.subheader("Initial Concentrations (μM)")
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    A0 = st.number_input("A0", value=0.0, format="%.4f") if n_species >= 1 else 0.0
-with col2:
-    B0 = st.number_input("B0", value=0.0, format="%.4f") if n_species >= 2 else 0.0
-with col3:
-    C0 = st.number_input("C0", value=0.0, format="%.4f") if n_species >= 3 else 0.0
-with col4:
-    D0 = st.number_input("D0", value=0.0, format="%.4f") if n_species >= 4 else 0.0
+
+# Prepare data for editor
+conc_init_data = []
+all_species_keys = ["A0", "B0", "C0", "D0"]
+for i, sp in enumerate(all_species_keys):
+    if i < n_species:
+        conc_init_data.append({"Species": sp, "Concentration": 0.0})
+
+df_conc_init = pd.DataFrame(conc_init_data)
+
+edited_conc = st.data_editor(
+    df_conc_init,
+    column_config={
+        "Species": st.column_config.TextColumn(disabled=True),
+        "Concentration": st.column_config.NumberColumn("Conc (μM)", min_value=0.0, format="%.4f")
+    },
+    hide_index=True,
+    use_container_width=True,
+    num_rows="fixed",
+    key="conc_editor_widget"
+)
+
+# Extract values
+A0 = B0 = C0 = D0 = 0.0
+for idx, row in edited_conc.iterrows():
+    sp = row['Species']
+    val = row['Concentration']
+    if sp == 'A0': A0 = val
+    elif sp == 'B0': B0 = val
+    elif sp == 'C0': C0 = val
+    elif sp == 'D0': D0 = val
 
 # Rate constants
 st.subheader("Rate Constants (1/s)")
-st.markdown("Check the box to **fix** the parameter (not optimized)")
+st.caption("Edit values directly or check 'Fixed' to hold parameter constant.")
 
-# Create rate constants input
-rate_constants = {}
+# Define the structure for the data editor
+if 'rate_constants_df' not in st.session_state:
+    st.session_state.rate_constants_df = pd.DataFrame(
+        [
+            {"Parameter": "k1", "Value": 0.0, "Fixed": True},
+            {"Parameter": "k_1", "Value": 0.0, "Fixed": True},
+            {"Parameter": "k2", "Value": 0.0, "Fixed": True},
+            {"Parameter": "k_2", "Value": 0.0, "Fixed": True},
+            {"Parameter": "k3", "Value": 0.0, "Fixed": True},
+            {"Parameter": "k_3", "Value": 0.0, "Fixed": True},
+        ]
+    )
 
-col1, col2, col3 = st.columns([2, 1, 1])
-with col1:
-    k1 = st.number_input("k1", value=0.0, format="%.6f", key="k1_val")
-with col2:
-    k1_fixed = st.checkbox("Fixed", value=True, key="k1_fixed")
+# Clean and modern data editor
+edited_df = st.data_editor(
+    st.session_state.rate_constants_df,
+    column_config={
+        "Parameter": st.column_config.TextColumn(
+            "Rate Constant", 
+            disabled=True
+        ),
+        "Value": st.column_config.NumberColumn(
+            "Value (1/s)", 
+            format="%.6f", 
+            min_value=0.0,
+            step=0.1
+        ),
+        "Fixed": st.column_config.CheckboxColumn(
+            "Fixed?", 
+            help="Check to fix this parameter during fitting",
+            default=True
+        ),
+    },
+    hide_index=True,
+    use_container_width=True,
+    key="rate_constants_editor_widget"
+)
 
-col1, col2, col3 = st.columns([2, 1, 1])
-with col1:
-    k_1 = st.number_input("k₋₁", value=0.0, format="%.6f", key="k_1_val")
-with col2:
-    k_1_fixed = st.checkbox("Fixed", value=True, key="k_1_fixed")
-
-col1, col2, col3 = st.columns([2, 1, 1])
-with col1:
-    k2 = st.number_input("k2", value=0.0, format="%.6f", key="k2_val")
-with col2:
-    k2_fixed = st.checkbox("Fixed", value=True, key="k2_fixed")
-
-col1, col2, col3 = st.columns([2, 1, 1])
-with col1:
-    k_2 = st.number_input("k₋₂", value=0.0, format="%.6f", key="k_2_val")
-with col2:
-    k_2_fixed = st.checkbox("Fixed", value=True, key="k_2_fixed")
-
-col1, col2, col3 = st.columns([2, 1, 1])
-with col1:
-    k3 = st.number_input("k3", value=0.0, format="%.6f", key="k3_val")
-with col2:
-    k3_fixed = st.checkbox("Fixed", value=True, key="k3_fixed")
-
-col1, col2, col3 = st.columns([2, 1, 1])
-with col1:
-    k_3 = st.number_input("k₋₃", value=0.0, format="%.6f", key="k_3_val")
-with col2:
-    k_3_fixed = st.checkbox("Fixed", value=True, key="k_3_fixed")
-
-# Define rate constants and their fixed status
-rate_constants_data = {
-    'k1': (k1, k1_fixed),
-    'k_1': (k_1, k_1_fixed),
-    'k2': (k2, k2_fixed),
-    'k_2': (k_2, k_2_fixed),
-    'k3': (k3, k3_fixed),
-    'k_3': (k_3, k_3_fixed),
-}
+# Update session state with edited values
+st.session_state.rate_constants_df = edited_df
 
 # Classify into fixed and variable
 fixed_ks = {}
 variable_ks = {}
 
-for rate, (value, is_fixed) in rate_constants_data.items():
+for index, row in edited_df.iterrows():
+    param = row["Parameter"]
+    val = row["Value"]
+    is_fixed = row["Fixed"]
+    
     if is_fixed:
-        fixed_ks[rate] = value
+        fixed_ks[param] = val
     else:
-        variable_ks[rate] = value
+        variable_ks[param] = val
 
 # Initial concentrations dictionary
 concentration_data = {
@@ -779,16 +807,31 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
     # Display fitted parameters
     st.subheader("Fitted Parameters")
 
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([2, 1])
     with col1:
-        st.write("**Adjusted Rate Constants:**")
+        st.caption("Adjusted Rate Constants")
+        res_data = []
         for key, value in sol['parAjustados'].items():
             std_key = f"{key}_std"
-            std_val = sol['sdPar'].get(std_key, "")
-            if std_val and std_val != "":
-                st.write(f"  {key} = {value:.6e} ± {std_val:.6e}")
-            else:
-                st.write(f"  {key} = {value:.6e}")
+            std_val = sol['sdPar'].get(std_key, None)
+            # Ensure std_val is None if it's an empty string or 0 if that's what was intended
+            if std_val == "": 
+                std_val = None
+                
+            row = {"Parameter": key, "Value": value, "Std. Dev.": std_val}
+            res_data.append(row)
+        
+        df_res = pd.DataFrame(res_data)
+        st.dataframe(
+            df_res,
+            column_config={
+                "Parameter": st.column_config.TextColumn("Parameter"),
+                "Value": st.column_config.NumberColumn("Value (1/s)", format="%.6e"),
+                "Std. Dev.": st.column_config.NumberColumn("Std. Dev.", format="%.6e"),
+            },
+            hide_index=True,
+            use_container_width=True
+        )
 
     with col2:
         st.metric("R²", f"{sol['R2']:.6f}")
