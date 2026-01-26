@@ -36,7 +36,6 @@ from functions.specific import (
 # Set page config
 st.set_page_config(
     page_title="KiPaD",
-    page_icon="🧪",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -434,7 +433,7 @@ with tab1:
         y_axis="Absorbance",
         legend_title="Time (s)"
     )
-    st.plotly_chart(fig_wave, width='stretch')
+    st.plotly_chart(fig_wave, use_container_width=True)
 
 with tab2:
     fig_time = create_plotly_2d_plot(
@@ -444,7 +443,7 @@ with tab2:
         y_axis="Absorbance",
         legend_title="Wavelength (nm)"
     )
-    st.plotly_chart(fig_time, width='stretch')
+    st.plotly_chart(fig_time, use_container_width=True)
 
 # ==================== SVD ANALYSIS ====================
 
@@ -493,10 +492,10 @@ with col3:
 tab1, tab2 = st.tabs(["Scree Plot", "Broken Stick Plot"])
 
 with tab1:
-    st.plotly_chart(fig_scree, width='stretch')
+    st.plotly_chart(fig_scree, use_container_width=True)
 
 with tab2:
-    st.plotly_chart(fig_broken, width='stretch')
+    st.plotly_chart(fig_broken, use_container_width=True)
 
 with st.expander("View SVD Matrices", expanded=False):
     st.subheader("Singular Values (Σ)")
@@ -543,7 +542,7 @@ with st.expander("View Approximated Spectra", expanded=False):
             y_axis="Absorbance",
             legend_title="Time (s)"
         )
-        st.plotly_chart(fig_wave_approx, width='stretch')
+        st.plotly_chart(fig_wave_approx, use_container_width=True)
 
     with tab2:
         fig_time_approx = create_plotly_2d_plot(
@@ -553,7 +552,7 @@ with st.expander("View Approximated Spectra", expanded=False):
             y_axis="Absorbance",
             legend_title="Wavelength (nm)"
         )
-        st.plotly_chart(fig_time_approx, width='stretch')
+        st.plotly_chart(fig_time_approx, use_container_width=True)
 
 # ==================== REACTION MODEL PARAMETERS ====================
 
@@ -818,7 +817,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
                 y_axis="Absorbance",
                 legend_title="Time (s)"
             )
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         with col2:
             fig = create_plotly_2d_plot(
                 df_e,
@@ -827,7 +826,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
                 y_axis="Absorbance",
                 legend_title="Wavelength (nm)"
             )
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
 
     with tab2:
         fig = create_plotly_2d_plot(
@@ -837,7 +836,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
             y_axis="Concentration (μM)",
             legend_title="Species"
         )
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)
 
     with tab3:
         fig = create_plotly_2d_plot(
@@ -847,7 +846,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
             y_axis="Extinction Coefficient (1/(μM·cm))",
             legend_title="Species"
         )
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)
 
     with tab4:
         residual_type = st.radio(
@@ -872,7 +871,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
                 y_axis="Absorbance",
                 legend_title="Time (s)"
             )
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         with col2:
             fig = create_plotly_2d_plot(
                 df_res,
@@ -881,7 +880,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
                 y_axis="Absorbance",
                 legend_title="Wavelength (nm)"
             )
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
 
     # Comparison plots
     st.subheader("Experimental vs Modelled Comparison")
@@ -910,7 +909,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
             df1_label=comparison_data,
             df2_label="Model"
         )
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)
 
     with col2:
         fig = create_plotly_comparison_plot(
@@ -922,7 +921,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
             df1_label=comparison_data,
             df2_label="Model"
         )
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)
 
     # QQ Plots
     st.subheader("QQ Plots of Residuals")
@@ -960,7 +959,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
                 residuals_dict,
                 f"QQ Plot - Time Series ({len(selected_cols)} wavelength(s))"
             )
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Select at least one wavelength to display the QQ plot.")
 
@@ -978,7 +977,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
             residuals_at_time,
             f"QQ Plot - Wavelength Series (t = {selected_time})"
         )
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)
 
     # ==================== EXPORT ====================
 
