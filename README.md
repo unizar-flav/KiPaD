@@ -14,6 +14,7 @@ The simplest method is to use the *Streamlit* application directly in your brows
 
 ### Jupyter Notebook
 Alternatively, this software was developed with Google Colab support. To access it, click on the Google Colab badge above or on this [link](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb).
+Link to test branch: https://colab.research.google.com/github/unizar-flav/KiPaD/blob/tests/KiPaD_8.ipynb
 
 **Step 1**: Verify the format of the data. It must be a CSV file and with the following structure:
 
