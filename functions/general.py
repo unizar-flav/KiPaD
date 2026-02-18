@@ -146,5 +146,6 @@ def procesa(**dictIn) -> dict:
     # info extra útil
     df.attrs["R2"] = sol["R2"]
 
-    return df
+    return df, sol
+
 
