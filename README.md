@@ -54,7 +54,7 @@ Each method prints the number of SSVs they determined. These values can be inter
 
 **Step 7**: In the next cell *(Dimensionality reduction and Matrix Approximation)*, the user is prompted to input the number of SSVs (based on the results from Step 5). The script will then approximate the original data using only the significant singular values, which capture the primary variations in the data, effectively reducing noise. If the user does NOT want matrix approximation to happen, uncheck the *Answer* box.
 
-**Step 8**: This step repeats Step 5 but uses the *denoised* data. The resulting plots demonstrate the denoised data, with smoother lines reflecting reduced noise.
+**Step 8**: This step repeats Step 5 but uses the *approximated* data. The resulting plots demonstrate the approximated data, with smoother lines reflecting reduced noise.
 
 **Step 9**: The next cell *(Reaction Model Parameters)*, allows the user to input the relevant parameters for the proposed reaction model :
 - **Number of species**: Corresponding to the number of SSVs.
@@ -85,18 +85,18 @@ graph TD;
 - **Spectroscopic Species**
 - **Residual Plots:**
     - **Absorbance vs Wavelength (Original Data)**: Residuals calculated using original data.
-    - **Absorbance vs Wavelength (Denoised Data)**: Residuals calculated using denoised data.
+    - **Absorbance vs Wavelength (Approximated Data)**: Residuals calculated using approximated data.
     - **Absorbance vs Time (Original Data)**: Residuals calculated using original data.
-    - **Absorbance vs Time (Denoised Data)**: Residuals calculated using denoised data.
+    - **Absorbance vs Time (Approximated Data)**: Residuals calculated using approximated data.
 
 **Step 12**: In this cell *(Model and Experimental data comparison)* plots similar plots to those of Step 5 and Step 9, however, in this case the plots will display only one series from two different dataset (one Experimental data and the other Model data). The user may change the series displayed by using the dropdown that appears below the plots after executing the cell.
 
 
 **Step 13**: The final cell *(Export results)* will gather all the inputted and generated data and save it as a set of CSV files within a ZIP archive. List of data:
 1. Original experimental data
-2. Denoised experimental data
+2. Approximated experimental data
 3. Modelled data
-4. Residuals (Denoised - Model data)
+4. Residuals (Approximated - Model data)
 5. Residuals (Original - Model data)
 6. Concentration profile
 7. Spectroscopic species

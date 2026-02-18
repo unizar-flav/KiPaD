@@ -655,7 +655,7 @@ def Model_spectra(
     D_org = original_data
 
     #Compute residuals (difference between experimental abd predicted absorbance)
-    residuals_denoised = D_exp - D_model
+    residuals_approximated = D_exp - D_model
     residuals = D_org - D_model
     D_model_df = pd.DataFrame(D_model,
                               index=D_exp.index,
@@ -675,7 +675,7 @@ def Model_spectra(
             "C_matrix": C_matrix,
             "S_matrix": S_matrix,
             "residuals": residuals,
-            "residuals_denoised": residuals_denoised
+            "residuals_approximated": residuals_approximated
         }
     return sol
 

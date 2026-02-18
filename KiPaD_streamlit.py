@@ -894,7 +894,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
     with tab4:
         residual_type = st.radio(
             "Residual Type",
-            options=["Original - Modelled", "Denoised - Modelled"],
+            options=["Original - Modelled", "Approximated - Modelled"],
             horizontal=True
         )
 
@@ -902,8 +902,8 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
             df_res = Model['residuals']
             r_title = "(Original - Modelled)"
         else:
-            df_res = Model['residuals_denoised']
-            r_title = "(Denoised - Modelled)"
+            df_res = Model['residuals_approximated']
+            r_title = "(Approximated - Modelled)"
 
         col1, col2 = st.columns(2)
         with col1:
@@ -930,7 +930,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
 
     comparison_data = st.radio(
         "Experimental Data to Compare",
-        options=["Original", "Denoised"],
+        options=["Original", "Approximated"],
         horizontal=True
     )
 
@@ -971,7 +971,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
 
     qq_residual_type = st.radio(
         "Residual Type for QQ Plot",
-        options=["Original - Modelled", "Denoised - Modelled"],
+        options=["Original - Modelled", "Approximated - Modelled"],
         horizontal=True,
         key="qq_residual"
     )
@@ -979,7 +979,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
     if qq_residual_type == "Original - Modelled":
         residuals = Model['residuals']
     else:
-        residuals = Model['residuals_denoised']
+        residuals = Model['residuals_approximated']
 
     # Handle duplicate indices by averaging
     if residuals.index.duplicated().any():
@@ -1036,9 +1036,9 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
             zipf.writestr('Original_experimental_data.csv', Model['D_orig'].to_csv())
             zipf.writestr('Original_experimental_data_TR.csv', Model['D_orig'].T.to_csv())
 
-            # Denoised experimental data
-            zipf.writestr('Denoised_experimental_data.csv', Model['D_approx'].to_csv())
-            zipf.writestr('Denoised_experimental_data_TR.csv', Model['D_approx'].T.to_csv())
+            # Approximated experimental data
+            zipf.writestr('Approximated_experimental_data.csv', Model['D_approx'].to_csv())
+            zipf.writestr('Approximated_experimental_data_TR.csv', Model['D_approx'].T.to_csv())
 
             # Modeled data
             zipf.writestr('Modelled_data.csv', Model['D_model'].to_csv())
@@ -1048,9 +1048,9 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
             zipf.writestr('Residuals_OrigMod.csv', Model['residuals'].to_csv())
             zipf.writestr('Residuals_OrigMod_TR.csv', Model['residuals'].T.to_csv())
 
-            # Residuals from Denoised - Modeled
-            zipf.writestr('Residuals_DenMod.csv', Model['residuals_denoised'].to_csv())
-            zipf.writestr('Residuals_DenMod_TR.csv', Model['residuals_denoised'].T.to_csv())
+            # Residuals from Approximated - Modeled
+            zipf.writestr('Residuals_ApproxMod.csv', Model['residuals_approximated'].to_csv())
+            zipf.writestr('Residuals_ApproxMod_TR.csv', Model['residuals_approximated'].T.to_csv())
 
             # Concentration profile
             zipf.writestr('Concentration_profile.csv', Model['C_matrix'].to_csv())
