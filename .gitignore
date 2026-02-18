@@ -1,0 +1,16 @@
+*.so
+*.pyc
+**/__pycache__
+
+# dev & testing
+test/
+outputs/
+
+# distribution / packaging
+build/
+dist/
+*.egg-info
+
+.venv
+.ipynb_checkpoints
+.vscode

@@ -1,0 +1,8 @@
+bokeh
+matplotlib
+numpy
+pandas
+plotly
+scikit-learn
+scipy
+streamlit
