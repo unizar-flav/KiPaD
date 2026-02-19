@@ -1,5 +1,5 @@
 import os
-
+import pandas as pd
 import numpy as np
 from scipy.optimize import least_squares
 
@@ -132,3 +132,4 @@ def procesa(**dictIn) -> dict:
     estim = [dictParEstim[nombr] for nombr in nombrParVar]
     sol = ajusta(residualsLS, estim, **argLeastSquares)
     return sol
+
