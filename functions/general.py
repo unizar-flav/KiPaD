@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import pandas as pd
 from scipy.optimize import least_squares
 
 
@@ -147,5 +148,6 @@ def procesa(**dictIn) -> dict:
     df.attrs["R2"] = sol["R2"]
 
     return df, sol
+
 
 
