@@ -731,7 +731,7 @@ def create_dynamic_plot(
             indices,
             df1[col_name],
             legend_label=col_name_str,
-            line_width=2,
+            line_width=8,
             color=df1_color,
             line_dash="solid",
             alpha=1,
@@ -742,7 +742,7 @@ def create_dynamic_plot(
             indices,
             df2[col_name],
             legend_label=col_name_str,
-            line_width=3,
+            line_width=4,
             color=df2_color,
             line_dash="dashed",
             name=f"line2_{i}",
@@ -751,7 +751,7 @@ def create_dynamic_plot(
             indices,
             df2[col_name],
             marker="circle",
-            size=6,
+            size=4,
             color=df2_color,
             alpha=0.8
         )
@@ -807,4 +807,5 @@ def create_dynamic_plot(
 
     # Return the plot, series select dropdown, and button in a layout
     return bokeh.layouts.column(p, series_select, button)
+
 
