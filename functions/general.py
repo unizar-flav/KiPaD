@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import pandas as pd
 from scipy.optimize import least_squares
 
 
@@ -131,5 +132,22 @@ def procesa(**dictIn) -> dict:
 
     estim = [dictParEstim[nombr] for nombr in nombrParVar]
     sol = ajusta(residualsLS, estim, **argLeastSquares)
-    return sol
+    
+    # ======== Convert sol information in dataframe =========
+
+    parAjustados = sol['parAjustados']
+    sdPar = sol['sdPar']
+
+    df = pd.DataFrame({
+        "Constant": nombrParVar,
+        "Value": [parAjustados[n] for n in nombrParVar],
+        "SD": [sdPar[n + "_std"] for n in nombrParVar]
+    })
+
+    # info extra útil
+    df.attrs["R2"] = sol["R2"]
+
+    return df, sol
+
+
 

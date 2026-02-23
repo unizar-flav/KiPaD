@@ -731,9 +731,10 @@ def create_dynamic_plot(
             indices,
             df1[col_name],
             legend_label=col_name_str,
-            line_width=2,
+            line_width=8,
             color=df1_color,
             line_dash="solid",
+            alpha=1,
             name=f"line1_{i}",
         )
         # For df2, use the same color for all lines
@@ -741,13 +742,20 @@ def create_dynamic_plot(
             indices,
             df2[col_name],
             legend_label=col_name_str,
-            line_width=2,
+            line_width=4,
             color=df2_color,
             line_dash="dashed",
             name=f"line2_{i}",
         )
-        lines.append((line1, line2))
-
+        points2 = p.scatter(
+            indices,
+            df2[col_name],
+            marker="circle",
+            size=4,
+            color=df2_color,
+            alpha=0.8
+        )
+        lines.append((line1, line2, points2))
     # Customize the legend
     p.legend.title = Legend
     p.legend.location = "top_right"
@@ -771,6 +779,7 @@ def create_dynamic_plot(
         for (var i = 0; i < lines.length; i++) {
             lines[i][0].visible = (i == selected_index);  // Show the selected series (df1)
             lines[i][1].visible = (i == selected_index);  // Show the corresponding model (df2)
+            lines[i][2].visible = (i == selected_index);  // Show the corresponding model (df2)
         }
     """)
 
@@ -778,13 +787,15 @@ def create_dynamic_plot(
     series_select.js_on_change('value', callback)
 
     # Initially, set the visibility for the first series
-    for i, (line1, line2) in enumerate(lines):
+    for i, (line1, line2, points2) in enumerate(lines):
         if i == 0:
             line1.visible = True
             line2.visible = True
+            points2.visible = True
         else:
             line1.visible = False
             line2.visible = False
+            points2.visible = False
 
     # Create a button to toggle the legend visibility
     button = bokeh.models.Button(label="Toggle Legend", button_type="success")
@@ -796,3 +807,5 @@ def create_dynamic_plot(
 
     # Return the plot, series select dropdown, and button in a layout
     return bokeh.layouts.column(p, series_select, button)
+
+
