@@ -763,7 +763,7 @@ if run_fitting:
 
         with st.spinner("Running optimization... This may take a while."):
             try:
-                sol = procesa(
+                df_visual, sol = procesa(
                     argLeastSquares=argLeastSquares,
                     dictParEstim=initial_params,
                     nombrParVar=nombrParVar,
@@ -1108,3 +1108,4 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
     )
 
 show_footer()
+
