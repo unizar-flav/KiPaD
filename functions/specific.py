@@ -35,8 +35,7 @@ def create_plot(df, Title, x_axis, y_axis, Legend, width=1200, height=700) -> bo
         x_axis_label=x_axis,
         y_axis_label=y_axis,
         width=width,
-        height=height,
-        output_backend="svg"
+        height=height
     )
 
     # Define font sizes for the title, axes, and labels
@@ -81,7 +80,7 @@ def create_plot(df, Title, x_axis, y_axis, Legend, width=1200, height=700) -> bo
                               code="\nlegend.visible = !legend.visible;\n"))
 
     # Return the plot object and button as a column layout
-    return bokeh.layouts.column(p, button), p
+    return bokeh.layouts.column(p, button)
 
 
 def slice_dataset(
@@ -808,6 +807,7 @@ def create_dynamic_plot(
 
     # Return the plot, series select dropdown, and button in a layout
     return bokeh.layouts.column(p, series_select, button)
+
 
 
 
