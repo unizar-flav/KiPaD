@@ -56,6 +56,7 @@ def show_footer():
     - Sergio Boneta Martínez
     - José Carlos Ciria Coscolluela
     - Milagros Medina Trullenque
+    - Cristina Lázaro Ruiz
 
     GPLv3 © 2024-2026 \\
     @ Universidad de Zaragoza
@@ -1108,5 +1109,6 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
     )
 
 show_footer()
+
 
 
