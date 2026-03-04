@@ -886,7 +886,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
             df_spectra,
             title=f"Spectroscopic Species Spectra",
             x_axis="Wavelength (nm)",
-            y_axis="Extinction Coefficient (1/(μM·cm))",
+            y_axis="Extinction Coefficient (μM⁻¹ cm⁻¹)",
             legend_title="Species"
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -911,7 +911,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
                 df_res.T,
                 title=f"Residuals vs Wavelength {r_title}",
                 x_axis="Wavelength (nm)",
-                y_axis="Absorbance",
+                y_axis="ΔAbsorbance",
                 legend_title="Time (s)"
             )
             st.plotly_chart(fig, use_container_width=True)
@@ -920,7 +920,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
                 df_res,
                 title=f"Residuals vs Time {r_title}",
                 x_axis="Time (s)",
-                y_axis="Absorbance",
+                y_axis="ΔAbsorbance",
                 legend_title="Wavelength (nm)"
             )
             st.plotly_chart(fig, use_container_width=True)
@@ -947,7 +947,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
             df1.T, df2.T,
             title="Absorbance vs Wavelength",
             x_axis="Wavelength (nm)",
-            y_axis="Absorbance",
+            y_axis="ΔAbsorbance",
             legend_title="Time (s)",
             df1_label=comparison_data,
             df2_label="Model"
@@ -959,7 +959,7 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
             df1, df2,
             title="Absorbance vs Time",
             x_axis="Time (s)",
-            y_axis="Absorbance",
+            y_axis="ΔAbsorbance",
             legend_title="Wavelength (nm)",
             df1_label=comparison_data,
             df2_label="Model"
@@ -1108,4 +1108,5 @@ if st.session_state.sol is not None and st.session_state.Model is not None:
     )
 
 show_footer()
+
 
