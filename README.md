@@ -1,6 +1,6 @@
 # KiPaD
 [![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Open Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/streamlit/KiPaD_8.ipynb)
+[![Open Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/unizar-flav/KiPaD/blob/master/KiPaD_8.ipynb)
 [![Open Web App](https://img.shields.io/badge/Open_Web_App-Streamlit-FF4B4B?logo=streamlit)](https://unizar-flav.github.io/KiPaD/)
 
 ## Overview
